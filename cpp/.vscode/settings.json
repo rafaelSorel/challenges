@@ -1,0 +1,15 @@
+{
+    "files.associations": {
+        "functional": "cpp",
+        "unordered_set": "cpp",
+        "algorithm": "cpp",
+        "array": "cpp",
+        "deque": "cpp",
+        "list": "cpp",
+        "vector": "cpp",
+        "string_view": "cpp",
+        "iosfwd": "cpp",
+        "sstream": "cpp",
+        "ostream": "cpp"
+    }
+}
