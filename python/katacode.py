@@ -278,10 +278,68 @@ class PathFinder:
 
 class NumsIslands:
     """
-    leetecode problem:
-    https://leetcode.com/problems/number-of-islands/
+    leetecode problems:
     """
-    def numIslands(self, grid: "List[List[str]]") -> int:
+
+    def numIslands2(self, m: int, n: int, positions: "List[List[int]]") -> "List[int]":
+        """
+        https://leetcode.com/problems/number-of-islands-ii/
+        """
+        if not (m and n):
+            return 0
+
+        from collections import defaultdict
+        grid = [[0 for _ in range(n)] for _ in range(m)]
+        islands = defaultdict(set)
+        islandCounter = 0
+
+        def BFS(node):
+            pat = ((0,1), (0,-1), (1,0), (-1,0))
+            inb = lambda x: 0 <= x[0] < m and 0 <= x[1] < n
+            nonlocal islandCounter
+            childs = filter(lambda x: inb(x) and grid[x[0]][x[1]],
+                            map(lambda x: (x[0]+node[0], x[1]+node[1]),
+                            pat))
+
+            islandvisited = set()
+            hasChilds = False
+            for child in childs:
+                hasChilds = True
+                for k, island in islands.items():
+                    if child in island:
+                        islands[k].add(node)
+                        islandvisited.add(k)
+
+            if not hasChilds:
+                islandCounter+=1
+                islands[islandCounter].add(node)
+
+
+            if len(islandvisited) > 1:
+                islandCounter+=1
+                islands[islandCounter] = set().union(*[islands[k] for k in islandvisited])
+                for k in islandvisited:
+                    del islands[k]
+
+            return len(islands)
+
+        finalarr = []
+        for pos in positions:
+            if not grid[pos[0]][pos[1]]:
+                grid[pos[0]][pos[1]] = 1
+                finalarr.append(BFS(tuple(pos)))
+            else:
+                finalarr.append(len(islands))
+
+        # print("finalarr: ", finalarr)
+        return finalarr
+
+
+
+    def numIslands1(self, grid: "List[List[str]]") -> int:
+        """
+        https://leetcode.com/problems/number-of-islands/
+        """
 
         islands = 0
         vNds = set()
@@ -311,11 +369,12 @@ class NumsIslands:
         return self.tests()
 
     def tests(self):
-        return self.numIslands([
-            ["1","1","1","1","0"],
-            ["1","1","0","1","0"],
-            ["1","1","0","0","1"],
-            ["0","0","1","0","0"]])
+        return self.numIslands2(3,3,[[0,0],[0,1],[1,2],[2,1],[1,0],[0,0],[2,2],[1,2],[1,1],[0,1]])
+        # return self.numIslands1([
+        #     ["1","1","1","1","0"],
+        #     ["1","1","0","1","0"],
+        #     ["1","1","0","0","1"],
+        #     ["0","0","1","0","0"]])
 
 class Trie:
     """
