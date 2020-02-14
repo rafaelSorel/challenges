@@ -358,14 +358,48 @@ string sum_strings(string a, string b) {
     return stream.str().size() ? stream.str(): "0";
 }
 
+void eqPoint(int arr[],int n)
+{
+    //Your code here
+    int left = 0;
+    int right = n-1;
+    int prodLeft =arr[left], prodRight =arr[right];
+    while(left < right){
+        if (prodLeft > prodRight){
+            right--;
+            prodRight *= arr[right];
+        }
+        else if(prodLeft < prodRight){
+            left++;
+            prodLeft *=arr[left];
+        }
+        else {
+            left++;
+            right--;
+            if (left < right)
+            {
+                prodRight *= arr[right];
+                prodLeft *=arr[left];
+            }
+        }
+    }
+
+    if(prodLeft == prodRight){
+        cout << left << "." << right+2 << endl;
+    }
+    else{
+        cout << -1 << endl;
+    }
+}
+
 int main()
 {
     cout << std::boolalpha;
 
-
     try
     {
-        cout << "val: " << str << endl;
+        int arr[]={1,2,3,1,2};
+        eqPoint(arr, sizeof(arr)/sizeof(arr[0]));
     } 
     catch(EdxException &e){
         cout << "Excepted..." << endl;

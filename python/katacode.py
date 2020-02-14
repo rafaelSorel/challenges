@@ -123,46 +123,46 @@ class IsIntersting:
         for t in tests:
             print (self.is_interesting(t['n'], t['interesting']), t['expected'])
 
-class TimedClass:
-    def timed(fn):
-        from time import perf_counter
-        from functools import wraps
-        @wraps(fn)
-        def inner(*args, **kwargs):
-            start = time.perf_counter()
-            result = fn(*args, **kwargs)
-            end = time.perf_counter()
-            print("{0} took {1:.6f}s to run.".format(fn.__name__, end-start))
-            return result
 
-        return inner
-
-
-    def _rec_fib(n):
-        if n<=2:
-            return 1
-        return _rec_fib(n-1) + _rec_fib(n-2)
-
-    @timed
-    def rec_fib(n):
-        result = _rec_fib(n)
+def timed(fn):
+    from time import perf_counter
+    from functools import wraps
+    @wraps(fn)
+    def inner(*args, **kwargs):
+        start = time.perf_counter()
+        result = fn(*args, **kwargs)
+        end = time.perf_counter()
+        print("{0} took {1:.6f}s to run.".format(fn.__name__, end-start))
         return result
 
-    @timed
-    def fib(n: int) -> int:
-        """
-        Calculate the fibanatcci number
-        """
-        fib1 = 1
-        fib2 = 1
-        for _ in range(3, n+1):
-            fib1, fib2 = fib2, fib1+fib2
+    return inner
 
-        return fib2
 
-    def fib_reduce(n):
-        from functools import reduce
-        return reduce(lambda x, y: x-1 + x-2, [1,1] + [x for x in range(3, n+1)])
+def _rec_fib(n):
+    if n<=2:
+        return 1
+    return _rec_fib(n-1) + _rec_fib(n-2)
+
+@timed
+def rec_fib(n):
+    result = _rec_fib(n)
+    return result
+
+@timed
+def fib(n: int) -> int:
+    """
+    Calculate the fibanatcci number
+    """
+    fib1 = 1
+    fib2 = 1
+    for _ in range(3, n+1):
+        fib1, fib2 = fib2, fib1+fib2
+
+    return fib2
+
+def fib_reduce(n):
+    from functools import reduce
+    return reduce(lambda x, y: x-1 + x-2, [1,1] + [x for x in range(3, n+1)])
 
 class PathFinder:
     """
@@ -178,7 +178,7 @@ class PathFinder:
         nodeIB = lambda x: (0 <= x[0] < N and 0 <= x[1] < N)
         mVal = lambda x: matrix[x[0]][x[1]]
 
-        visitedNode = set()
+        vis = set()
         pathWeight = {}
         edTrack = {}
         pathQueue = []
@@ -186,8 +186,8 @@ class PathFinder:
         pathQueue.append((0, 0))
         while len(pathQueue) > 0:
             node = pathQueue.pop()
-            visitedNode.add(node)
-            childs =filter(lambda x: x not in visitedNode and nodeIB(x), [pAdd(x, node) for x in movePat])
+            vis.add(node)
+            childs =filter(lambda x: x not in vis and nodeIB(x), [pAdd(x, node) for x in movePat])
             for child in childs:
                 edgeWeight = pathWeight[node] + abs(mVal(node) - mVal(child))
                 if child in pathWeight:
@@ -276,11 +276,11 @@ class PathFinder:
         # print(self.path_finder(f), 0)
         # print(self.path_finder(g), 4)
 
+from collections import namedtuple
 class NumsIslands:
     """
     leetecode problems:
     """
-
     def numIslands2(self, m: int, n: int, positions: "List[List[int]]") -> "List[int]":
         """
         https://leetcode.com/problems/number-of-islands-ii/
@@ -317,8 +317,9 @@ class NumsIslands:
 
             if len(islandvisited) > 1:
                 islandCounter+=1
-                islands[islandCounter] = set().union(*[islands[k] for k in islandvisited])
+                islands[islandCounter] = set()
                 for k in islandvisited:
+                    islands[islandCounter] = islands[islandCounter].union(islands[k])
                     del islands[k]
 
             return len(islands)
@@ -334,47 +335,87 @@ class NumsIslands:
         # print("finalarr: ", finalarr)
         return finalarr
 
-
-
     def numIslands1(self, grid: "List[List[str]]") -> int:
         """
         https://leetcode.com/problems/number-of-islands/
         """
-
+        
         islands = 0
         vNds = set()
+        node = namedtuple("node", 'row col')
+        node.__lt__ = lambda x, y: x.row < y.row or x.col < y.col
+        node.inb = lambda x: 0 <= x.row < len(grid) and 0 <= x.col < len(grid[0])
+        node.__add__ = lambda x, y: node(x.row+y.row, x.col+y.col)
 
         def BFS(tnode):
             nonlocal vNds
             vNds.add(tnode)
-            in_bound = lambda x: 0 <= x[0] < len(grid) and 0 <= x[1] < len(grid[0])
-            mvPat = ((0,1), (0,-1), (1, 0), (-1,0))
+            
+            mvPat = (node(0,1), node(0,-1), node(1, 0), node(-1,0))
+
             pathQueue = [tnode]
             while len(pathQueue) > 0:
-                node = pathQueue.pop()
-                childs = filter(lambda x: in_bound(x) and grid[x[0]][x[1]] == '1' and not (x in vNds), map(lambda x: (x[0]+node[0], x[1]+node[1]) ,mvPat))
+                cnode = pathQueue.pop()
+                childs = filter(lambda x: x.inb() and grid[x.row][x.col] == '1' and not (x in vNds), map(lambda x: x + cnode ,mvPat))
                 for child in childs:
                     vNds.add(child)
                     pathQueue.append(child)
 
         for i, row in enumerate(grid):
             for j, col in enumerate(row):
-                if col == "1" and (i, j) not in vNds:
+                if col == "1" and node(i, j) not in vNds:
                     islands+=1
-                    BFS((i, j))
+                    BFS(node(i, j))
 
         return islands
 
     def __call__(self):
         return self.tests()
 
+    def maxAreaOfIsland(self, grid: "List[List[int]]") -> int:
+        """
+        https://leetcode.com/problems/max-area-of-island/
+        """
+        node = namedtuple("node", 'row col')
+        node.__lt__ = lambda x, y: x.row < y.row or x.col < y.col
+        node.inb = lambda x: 0 <= x.row < len(grid) and 0 <= x.col < len(grid[0])
+        node.__add__ = lambda x, y: node(x.row+y.row, x.col+y.col)
+        pattern = (node(0,1), node(0,-1), node(1,0), node(-1,0))
+        vis = set()
+
+        def DFS(snode, grid, isp: "island part correspond to 1"):
+            vis.add(snode)
+            for child in filter(lambda x: x.inb() and x not in vis and grid[x.row][x.col]==1,map(lambda x: x + snode ,pattern)):
+                isp+=1
+                isp = DFS(child, grid, isp)
+
+            return isp
+
+        max_island = 0
+        for i, row in enumerate(grid):
+            for j, _ in filter(lambda x: x[1] == 1 and node(i, x[0]) not in vis, enumerate(row)):
+                island = DFS(node(i, j), grid, isp=1)
+                if max_island < island:
+                    max_island = island
+
+        return max_island
+
     def tests(self):
-        return self.numIslands2(3,3,[[0,0],[0,1],[1,2],[2,1],[1,0],[0,0],[2,2],[1,2],[1,1],[0,1]])
+        # return self.numIslands2(3,3,[[0,0],[0,1],[1,2],[2,1],[1,0],[0,0],[2,2],[1,2],[1,1],[0,1]])
         # return self.numIslands1([
         #     ["1","1","1","1","0"],
         #     ["1","1","0","1","0"],
         #     ["1","1","0","0","1"],
         #     ["0","0","1","0","0"]])
+        return self.maxAreaOfIsland(
+                       [[0,0,1,0,0,0,0,1,0,0,0,0,0],
+                        [0,0,0,0,0,0,0,1,1,1,0,0,0],
+                        [0,1,1,0,1,0,0,0,0,0,0,0,0],
+                        [0,1,0,0,1,1,0,0,1,0,1,0,0],
+                        [0,1,0,0,1,1,0,0,1,1,1,0,0],
+                        [0,0,0,0,0,0,0,0,0,0,1,0,0],
+                        [0,0,0,0,0,0,0,1,1,1,0,0,0],
+                        [0,0,0,0,0,0,0,1,1,0,0,0,0]])
 
 class Trie:
     """
@@ -446,8 +487,41 @@ class Trie:
         res = *res, 
         return res
 
-def testCalss(className, *args, **kwargs):
-    obj = className(*args, **kwargs)
-    print(className.__name__, obj())
 
-testCalss(NumsIslands)
+class ZigZag:
+    """
+    https://leetcode.com/problems/zigzag-conversion
+    """
+    @timed
+    def convert(self, s: str, numRows: int) -> str:
+        if len(s) <= numRows or numRows == 1:
+            return s
+
+        finalGrid = [[] for _ in range(numRows)]
+
+        node = 0
+        direction = 1
+        for ch in s:
+            finalGrid[node].append(ch)
+
+            if 0 > node+direction or node+direction == numRows:
+                direction=-direction
+
+            node+=direction
+
+        return ''.join(col for row in finalGrid for col in row)
+
+    def __call__(self, *args, **kwargs):
+        return self.run_tests(*args, **kwargs)
+
+
+    def run_tests(self, *args, **kwargs):
+        return self.convert("PAYPALISHIRING", 4)
+        
+
+
+def testCalss(className, *args, **kwargs):
+    obj = className()
+    print(f"{className.__name__}:\n", obj(*args, **kwargs))
+
+testCalss(ZigZag)
